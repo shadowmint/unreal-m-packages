@@ -13,3 +13,6 @@
 [submodule "unreal-m-ai"]
 	path = unreal-m-ai
 	url = git@github.com:shadowmint/unreal-m-ai.git
+[submodule "unreal-m-graph"]
+	path = unreal-m-graph
+	url = git@github.com:shadowmint/unreal-m-graph.git
