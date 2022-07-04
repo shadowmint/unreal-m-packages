@@ -1,5 +1,7 @@
 export enum UnrealToolsErrorCode {
   UnableToFindProjectFolder = "UnableToFindProjectFolder",
+  CantCopyFromNonFolderTarget = "CantCopyFromNonFolderTarget",
+  CantCopyToNonFolderTarget = "CantCopyToNonFolderTarget",
 }
 
 export class UnrealToolsError extends Error {

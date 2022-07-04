@@ -2,7 +2,7 @@ import { Config } from "../config";
 import * as path from "path";
 import * as fs from "fs";
 import { UnrealToolsError, UnrealToolsErrorCode } from "./errors";
-import { directoryNameFrom } from "./utils";
+import { copyRecursive, directoryNameFrom } from "./utils";
 
 export enum UnrealPluginActionType {
   Patch = "Patch",
@@ -12,13 +12,13 @@ export enum UnrealPluginActionType {
 export interface UnrealPluginAction {
   action: UnrealPluginActionType;
   name: string;
-  key: string;
   from?: string;
   to?: string;
 }
 
 export interface UnrealPluginFolder {
-  key: string;
+  pluginName: string;
+  moduleName: string;
   localPath: string;
   installedPath?: string;
 }
@@ -73,8 +73,13 @@ export class UnrealProject {
   /** An installed plugin has the same *key* but is in the installed plugins folder */
   private async findInstalledPluginFor(plugin: UnrealPlugin) {
     plugin.sourceFolders = plugin.sourceFolders.map((sourceFolder) => {
-      const key = sourceFolder.key;
-      const expectedPath = path.join(this.gameFolder, "Plugins", key);
+      const expectedPath = path.join(
+        this.gameFolder,
+        "Plugins",
+        sourceFolder.moduleName,
+        "Source",
+        sourceFolder.pluginName
+      );
       const installedPath = fs.existsSync(expectedPath) ? expectedPath : undefined;
       return { ...sourceFolder, installedPath };
     });
@@ -87,20 +92,27 @@ export class UnrealProject {
     const pluginsPath = path.resolve(folder, "src");
 
     // A plugin consists of multiple modules
-    const plugins = (await fs.promises.readdir(pluginsPath)).map((i) => path.join(pluginsPath, i, "Source"));
+    const plugins = (await fs.promises.readdir(pluginsPath)).map((i) => path.join(pluginsPath, i));
     const sourceFolders = (
       await Promise.all(
-        plugins.map(async (i) => {
-          return (await fs.promises.readdir(i)).map((j) => path.join(i, j));
+        plugins.map(async (pluginPath) => {
+          const pluginName = directoryNameFrom(pluginPath);
+          const pluginSrc = path.join(pluginPath, "Source");
+          return (await fs.promises.readdir(pluginSrc)).map((j) => ({
+            pluginName: pluginName,
+            pluginPath: pluginSrc,
+            moduleName: j,
+          }));
         })
       )
     ).flatMap((i) => i);
 
     // Every folder in the plugins directory is uniquely named after it's plugin module.
-    const sourceFoldersObjects = sourceFolders.map((folderPath) => {
+    const sourceFoldersObjects = sourceFolders.map((details) => {
       const obj: UnrealPluginFolder = {
-        key: folderPath.substring(path.dirname(folderPath).length + 1),
-        localPath: folderPath,
+        pluginName: details.pluginName,
+        moduleName: details.moduleName,
+        localPath: path.join(details.pluginPath, details.moduleName),
       };
       return obj;
     });
@@ -112,13 +124,6 @@ export class UnrealProject {
     };
   }
 
-  async findInstalledPackages(): Promise<Array<UnrealPlugin>> {
-    const pluginFolders = await fs.promises.readdir(path.join(this.gameFolder, "Plugins"));
-    console.log(pluginFolders);
-    const installedPlugins: Array<UnrealPlugin> = [];
-    return installedPlugins;
-  }
-
   determinePatchActions(packages: Array<UnrealPlugin>): UnrealPluginAction[] {
     const patch: UnrealPluginAction[] = [];
     const skip: UnrealPluginAction[] = [];
@@ -127,16 +132,14 @@ export class UnrealProject {
         if (folder.installedPath) {
           patch.push({
             action: UnrealPluginActionType.Patch,
-            name: pack.name,
-            key: folder.key,
+            name: `${folder.moduleName}.${folder.moduleName}`,
             from: folder.installedPath,
             to: folder.localPath,
           });
         } else {
           skip.push({
             action: UnrealPluginActionType.Skip,
-            name: pack.name,
-            key: folder.key,
+            name: `${folder.moduleName}.${folder.moduleName}`,
           });
         }
       }
@@ -147,12 +150,24 @@ export class UnrealProject {
   /** Copy all the files from the source to the destination to keep the WIP changes */
   async patchInstalledToLocal(action: UnrealPluginAction, apply: boolean) {
     if (action.action === UnrealPluginActionType.Patch) {
-      console.log(`: ${action.action}: ${action.name}.${action.key} (${action.from} => ${action.to})`);
-      if (apply) {
-        console.log("TODO...");
+      console.log(`: ${action.action}: ${action.name} (${action.from} => ${action.to})`);
+      if (apply && action.to && action.from) {
+        // Rename the target to a backup just in case
+        if (fs.existsSync(action.to)) {
+          const timestamp = new Date().getTime();
+          const backupFolder = `${action.to}.backup.${timestamp}`;
+          await fs.promises.rename(action.to, backupFolder);
+          console.log(`:: created backup: ${backupFolder}`);
+        }
+
+        // Copy new to old
+        await copyRecursive(action.from, action.to);
+        console.log(`:: cp -r ${action.from} ${action.to}`);
       }
     } else if (action.action === UnrealPluginActionType.Skip) {
-      console.log(`: ${action.action}: ${action.name}.${action.key}`);
+      console.log(`: ${action.action}: ${action.name}`);
+    } else {
+      console.log(`: Unknown action: ${action.action}`);
     }
   }
 }
