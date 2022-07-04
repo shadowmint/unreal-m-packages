@@ -17,12 +17,25 @@ Update all:
     git submodule foreach git checkout main
     git submodule foreach git pull
 
+Undo changes:
+
+    git submodule foreach git checkout .
+    git submodule foreach git clean -fd
+
 Install node deps:
 
     npm ci
 
 ## Tooling
 
-Fetch local changes for all packages from the local game:
+Show detected packages:
 
-    npm run pull-local-changes
+    npm run info
+
+List patch intentions:
+
+    npm run list
+
+Patch packages from the version in the game:
+
+    npm run patch
