@@ -1,0 +1,15 @@
+[submodule "unreal-m-widget"]
+	path = unreal-m-widget
+	url = git@github.com:shadowmint/unreal-m-widget.git
+[submodule "unreal-m-utils"]
+	path = unreal-m-utils
+	url = git@github.com:shadowmint/unreal-m-utils.git
+[submodule "unreal-m-tasks"]
+	path = unreal-m-tasks
+	url = git@github.com:shadowmint/unreal-m-tasks.git
+[submodule "unreal-m-assets"]
+	path = unreal-m-assets
+	url = git@github.com:shadowmint/unreal-m-assets.git
+[submodule "unreal-m-ai"]
+	path = unreal-m-ai
+	url = git@github.com:shadowmint/unreal-m-ai.git

@@ -1,0 +1,28 @@
+{
+  "name": "unreal-m-packages",
+  "version": "1.0.0",
+  "description": "Expected folder structure:",
+  "main": "index.js",
+  "scripts": {
+    "info": "ts-node scripts/listLocalPackages.ts",
+    "list": "ts-node scripts/patchLocalPackagesDryRun.ts",
+    "patch": "ts-node scripts/patchLocalPackages.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shadowmint/unreal-m-packages.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/shadowmint/unreal-m-packages/issues"
+  },
+  "homepage": "https://github.com/shadowmint/unreal-m-packages#readme",
+  "dependencies": {
+    "prettier": "^2.7.1",
+    "ts-node": "^10.8.2"
+  },
+  "prettier": {
+    "printWidth": 120
+  }
+}
